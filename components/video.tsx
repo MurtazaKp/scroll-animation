@@ -5,12 +5,9 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
-// Register GSAP plugins safely
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
-  ScrollTrigger.config({
-    ignoreMobileResize: true,
-  });
+  ScrollTrigger.config({ ignoreMobileResize: true });
 }
 
 export default function ScrollVideoPlayer() {
@@ -21,51 +18,42 @@ export default function ScrollVideoPlayer() {
     () => {
       const video = videoRef.current;
       const container = containerRef.current;
-
       if (!video || !container) return;
 
-      let scrollTween: gsap.core.Tween;
+      const setup = async () => {
+        try {
+          await video.play();
+          video.pause();
+          video.currentTime = 0.01; // not 0 (important for iOS)
+        } catch (e) {
+          console.log("Autoplay prevented", e);
+        }
 
-      const setupAnimation = () => {
-        const isMobile = window.innerWidth < 768;
+        const scrollDistance = window.innerHeight * 3;
 
-        // Responsive scroll distance
-        const scrollDistance = isMobile
-          ? window.innerHeight * 2
-          : window.innerHeight * 4;
-
-        scrollTween = gsap.to(video, {
-          currentTime: video.duration || 1,
-          ease: "none",
-          scrollTrigger: {
-            trigger: container,
-            start: "top top",
-            end: `+=${scrollDistance}`,
-            scrub: true,
-            pin: true,
-            anticipatePin: 1,
-            invalidateOnRefresh: true,
+        ScrollTrigger.create({
+          trigger: container,
+          start: "top top",
+          end: `+=${scrollDistance}`,
+          scrub: true,
+          pin: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onUpdate: (self) => {
+            if (!video.duration) return;
+            video.currentTime = self.progress * video.duration;
           },
         });
       };
 
       if (video.readyState >= 2) {
-        setupAnimation();
+        setup();
       } else {
-        video.onloadedmetadata = setupAnimation;
+        video.addEventListener("loadeddata", setup);
       }
 
-      // Refresh ScrollTrigger on resize
-      const handleResize = () => {
-        ScrollTrigger.refresh();
-      };
-
-      window.addEventListener("resize", handleResize);
-
       return () => {
-        window.removeEventListener("resize", handleResize);
-        if (scrollTween) scrollTween.kill();
-        ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+        ScrollTrigger.getAll().forEach((t) => t.kill());
       };
     },
     { scope: containerRef },
@@ -76,7 +64,7 @@ export default function ScrollVideoPlayer() {
       {/* Intro Spacer */}
       <section className="h-[60vh] flex items-center justify-center">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center sm:px-4 sm">
-          Scroll Down to Start Video
+          Scroll Down
         </h1>
       </section>
 
@@ -100,11 +88,6 @@ export default function ScrollVideoPlayer() {
             disablePictureInPicture
           />
         </div>
-      </section>
-
-      {/* Outro Section */}
-      <section className="h-screen bg-zinc-900 flex items-center justify-center">
-        <p className="text-lg sm:text-xl md:text-2xl">End of Animation</p>
       </section>
     </main>
   );
