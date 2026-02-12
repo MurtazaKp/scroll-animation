@@ -1,11 +1,10 @@
-import FramerVideoScroll from "@/components/video";
-import ScrollVideoPlayer from "@/components/video";
+import ScrollCanvasSequence from "@/components/video";
 import Image from "next/image";
 
 export default function Home() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <ScrollVideoPlayer />
+      <ScrollCanvasSequence />
     </div>
   );
 }
